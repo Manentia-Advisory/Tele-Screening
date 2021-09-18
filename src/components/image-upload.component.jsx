@@ -40,7 +40,7 @@ class ImageUplaod extends React.Component {
                                 <div className="mt-1 flex justify-center px-6 pt-8 pb-10 border-2 border-gray-300 border-dashed rounded-md">
                                 <div className="space-y-1 text-center">
                                     <svg
-                                    className="mx-auto h-12 w-12 text-gray-400"
+                                    className="mx-auto h-20 w-20 text-gray-400"
                                     stroke="currentColor"
                                     fill="none"
                                     viewBox="0 0 48 48"
