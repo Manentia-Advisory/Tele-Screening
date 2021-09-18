@@ -68,6 +68,16 @@ class ImageUplaod extends React.Component {
                         </div>
                     </dl>
                 </div>
+                <div className="px-4 py-3 bg-gray-50 text-right flex justify-end sm:px-6">
+                    <button type="button"
+                        className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        className="ml-3 bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Save
+                    </button>
+                </div>
             </div>
 
         )
