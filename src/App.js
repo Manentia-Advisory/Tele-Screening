@@ -1,10 +1,16 @@
-import Example from "./pages/sign-in-page.component";
+import { Route, Switch } from 'react-router-dom';
+
+import ImageUploadPage from "./pages/image-upload-page.component";
+import SignUpPage from "./pages/sign-in-page.component";
 
 
 function App() {
   return (
-    <div className="">
-      <Example />
+    <div>
+      <Switch>
+        <Route exact path='/' component={SignUpPage}/>
+        <Route path="/app" component={ImageUploadPage}/>
+      </Switch>
     </div>
   );
 }
