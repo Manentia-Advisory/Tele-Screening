@@ -1,4 +1,4 @@
-import Example from "./pages/sign-in.component";
+import Example from "./pages/sign-in-page.component";
 
 
 function App() {
