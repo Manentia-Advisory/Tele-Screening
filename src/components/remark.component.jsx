@@ -11,9 +11,9 @@ const Remark = (props) => (
                     </textarea>
                 </div>
             </div>
-            {/* <p className="mt-0.5 text-sm text-gray-500">
-                Please remove the diseases which are inaccurate (if any).
-            </p> */}
+            <p className="mt-0.5 text-sm text-gray-500">
+                Remark is optional.
+            </p>
     </div>
 )
 

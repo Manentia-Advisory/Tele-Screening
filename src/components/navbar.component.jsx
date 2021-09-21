@@ -31,10 +31,9 @@ export default function NavBar() {
                 <div className="flex-shrink-0 hidden md:block">
                   <button
                     type="button"
-                    className="relative inline-flex items-center px-4 py-2 border border-white shadow-sm text-sm font-semibold rounded-md text-white hover:text-blue-900 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500"
+                    className="relative inline-flex items-center px-3 py-1 lg:py-1.5 border border-white shadow-sm text-sm font-semibold rounded-md text-white hover:text-blue-900 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500"
                   >
                     <span>Contact Us</span>
-                    
                   </button>
                 </div>
                 
@@ -42,7 +41,7 @@ export default function NavBar() {
                 <div className="flex-shrink-0 hidden md:block">
                   <Link to='/'>
                     <button type="button"
-                      className="relative inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-semibold rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500">
+                      className="relative inline-flex items-center px-3 py-1 lg:py-1.5 border border-transparent shadow-sm text-sm font-semibold rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500">
                       <span>Sign Out</span>
                     </button>
                   </Link>

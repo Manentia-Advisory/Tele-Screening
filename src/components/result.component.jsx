@@ -62,7 +62,7 @@ class Result extends React.Component {
                                     </dl>
                                 </div>
                             </div>
-                            <div className="mt-4 mx-4 md:mx-0 md:mt-0 flex lg:flex-col justify-between">
+                            <div className="mt-4 mx-4 md:mx-0 md:mt-0 hidden lg:flex lg:flex-col justify-between">
                             <button type="button"
                                 className="w-9/12 mr-1 lg:mr-0 lg:w-full mt-2  py-2 px-4 border border-blue-700 rounded-md shadow-sm text-sm font-medium text-blue-800 hover:text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                     Edit Marking
@@ -105,8 +105,19 @@ class Result extends React.Component {
                                 <List list={diseases}/>
                                 <Remark value={this.state.remarks} handleChange={handleChangeRemarks}/>
 
+                                <div className="mx-12 mb-8 lg:hidden flex lg:flex-col justify-between">
+                                    <button type="button"
+                                        className="w-9/12 mr-1.5 lg:mr-0 lg:w-full mt-2  py-2 px-4 border border-blue-700 rounded-md shadow-sm text-sm font-medium text-blue-800 hover:text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                            Edit Marking
+                                    </button>
+                                    <button type="button"
+                                        className="w-9/12 ml-1.5 lg:ml-0 lg:w-full mt-2 bg-blue-700 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                            Save
+                                    </button>
+                                </div>
+
                                 <div className="">
-                                    <a href="/" className="block bg-gray-100 text-sm font-medium text-gray-500 text-center px-4 py-4 hover:text-blue-700 sm:rounded-b-lg">
+                                    <a href="/" className="block bg-gray-100 text-sm font-medium text-gray-500 text-center px-4 py-4 hover:text-blue-700 hover:bg-gray-200 sm:rounded-b-lg">
                                         Generate Report
                                     </a>
                                 </div>
