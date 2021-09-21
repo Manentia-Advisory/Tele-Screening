@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 class ImageUplaod extends React.Component {
     constructor(props) {
@@ -11,12 +12,12 @@ class ImageUplaod extends React.Component {
 
     render() {
         return (
-            <div className="mx-6 sm:mx-16 mb-8 bg-white shadow overflow-hidden rounded-lg border border-gray-300">
-                <div className="px-4 py-5 sm:px-6">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Test X-Ray Image</h3>
-                    <p className="mt-1 text-sm text-gray-500">Currently Patient information fields are disabled. Please <span className="font-bold">upload only original x-ray image</span>, as the system is development phase, might give unappropritate result.</p>
+            <div className="mx-8 lg:mx-32 mb-8 bg-white shadow overflow-hidden rounded-lg border border-gray-300">
+                <div className="px-4 py-5 sm:px-6 md:px-12">
+                    <h3 className="text-lg lg:text-xl mt-2 leading-6 font-medium text-gray-900">Test X-Ray Image</h3>
+                    <p className="mt-2 text-sm lg:text-medium text-gray-500">Currently Patient information fields are disabled. Please <span className="font-bold">upload only original x-ray image</span>, as the system is development phase, might give unappropritate result.</p>
                 </div>
-                <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+                <div className="border-t border-gray-200 px-4 py-5 sm:px-6 md:px-20">
                     <dl className="grid gap-x-4 gap-y-8 grid-cols-2">
                         <div className="col-span-1">
                             <dt className="text-sm font-medium text-gray-500">Full name</dt>
@@ -73,10 +74,12 @@ class ImageUplaod extends React.Component {
                         className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Cancel
                     </button>
+                    <Link to="/result">
                     <button type="submit"
                         className="ml-3 bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Submit
                     </button>
+                    </Link>
                 </div>
             </div>
 

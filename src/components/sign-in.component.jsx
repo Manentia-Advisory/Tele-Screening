@@ -16,8 +16,8 @@ class SignIn extends React.Component {
 
     }
 
-    handleChange = () => {
-      
+    handleChangePassword = e => {
+      this.setState({ password: e.target.value })
     }
 
     render() {
@@ -59,7 +59,7 @@ class SignIn extends React.Component {
                             placeholder="Password"
                             autoComplete="current-password"
                             value={this.state.password}
-                            onChange={this.handleChange}
+                            onChange={this.handleChangePassword}
                             required
                             className="block mt-1 w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"
                           />
