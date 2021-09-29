@@ -40,7 +40,7 @@ export default function SignUpPage() {
                     src={Logo}
                     alt="Manentia Advisory"
                   />
-                  <div className="m-auto text-white text-lg font-base tracking-wide subpixel-antialiased">Manetia Advisory</div>
+                  <div className="m-auto text-white text-lg font-base tracking-wide subpixel-antialiased">Manentia Advisory</div>
                 </a>
               </div>
             </div>

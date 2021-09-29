@@ -9,8 +9,8 @@ function App() {
   return (
     <div>
       <Switch>
-        <Route exact path='/' component={SignUpPage}/>
-        <Route path="/app" component={ImageUploadPage}/>
+        <Route exact path='/login' component={SignUpPage}/>
+        <Route path="/" component={ImageUploadPage}/>
         <Route path="/result" component={ResultPage}/>
       </Switch>
     </div>
