@@ -1,5 +1,6 @@
 ## API IMPORTS
-from api.ml_processing import image_xray_or_not
+import numpy as np
+from api.ml_processing import gradCam, image_ct_or_not, image_xray_or_not, lung_segment, predict_ct_scan, predict_xray_for_5_diseases, xray_gradcam
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework import generics, status, permissions, serializers
@@ -20,10 +21,19 @@ from django.middleware.csrf import get_token
 
 #YoloV5 Detection Libraries by PYTorch
 import detect
+# from keras import optimizers
+# from keras import layers
+# from classification_models.tfkeras import Classifiers
+# from tensorflow.keras import Model
+# import tensorflow as tf
 
 # import utils
 import json
 import os
+from datetime import datetime, timezone
+import time
+import pytz
+import numpy as np
 
 
 # @permission_classes((AllowAny, )) # Allow any user
@@ -35,26 +45,46 @@ import os
 ## API Pattern: # http://127.0.0.1:8000/api/YOLOAPI
 
 # YOLO API:
+
+@permission_classes((AllowAny, ))
 class GetYOLODetection(generics.RetrieveAPIView):
+    permission_classes = (permissions.AllowAny,)
     def post(self, request):
+        name = self.request.data.get('name',None)
+        age = self.request.data.get('age',None)
+        bloodGroup = self.request.data.get('bloodGroup',None)
+        weight = self.request.data.get('weight',None)
+        token = self.request.data.get('token',None)
+        doctorID = self.request.data.get('doctorID',None)
+        gender = self.request.data.get('gender',None)
         image = request.FILES['xray']
-        ImageName = image.name 
-
+        # print(image)
+        # print(type(image))
+        ImageName = image.name
         obj = FileSystemStorage()       ## Created Object of FileSystemStorage 
-        ImagePath = obj.save(ImageName, image) 
+        ImagePath = obj.save(ImageName, image)
+        obj.save("xray_img/"+ImageName, image) 
+        # print(ImagePath)
+        # print(type(ImagePath))
+        rslt = image_xray_or_not(img_path = "./media/"+ImagePath)
 
-        result = image_xray_or_not(img_path = "./media/"+ImagePath)
-
-        if result == False:
+        if rslt == False:
             os.remove("./media/"+ImagePath)
             response = {"imageValid":"False"}
             response_json = JSONRenderer().render(response)
-            return HttpResponse(response_json, content_type='application/json')
+            return HttpResponse(response_json, content_type='application/json', status = status.HTTP_400_BAD_REQUEST)
         
+        ## Lung Segmentation
+        lung_segment_path = lung_segment(ImagePath)
         resultOfYOLO = detect.detect(ImagePath, save_dir="./media/X_Ray_Detections/", user_id=123456, aws_s3_path="./media/aws_s3_bucket/", save_img=False)
 
         Detections = resultOfYOLO.get('Detections')
-        detected_path = resultOfYOLO.get('new_path')
+        detected_path = resultOfYOLO.get('new_path')      
+    
+        # with open("."+detected_path, "rb") as image2string:
+            # converted_string = base64.b64encode(image2string.read())
+        # print(type(converted_string))
+        # detected_path = converted_string
         detections_label = ""
         detections_conf = ""
         detections_label_List = []
@@ -74,23 +104,46 @@ class GetYOLODetection(generics.RetrieveAPIView):
             detections_conf = "0"
 
         detections_conf_List = [int(float(i)*100) for i in detections_conf_List]
-        print(detections_conf_List)
-        response_json = JSONRenderer().render(detections_label)
-        return HttpResponse(response_json, content_type='application/json')
 
+        processedImage_paths = [
+            {
+                "name": "Lung Segmentation",
+                "image_path": lung_segment_path
+            },
+            {
+                "name": "Predicated Image",
+                "image_path": "/media/"+resultOfYOLO.get('new_path').split('/',2)[2]
+            }
+        ]
+        os.remove("./media/"+ImagePath)
+        detection = {"patiend_id":"millis","processedImage_paths":processedImage_paths,"imageValid":"True","time":"time_now","tokenValid":'true', 'detections_label':detections_label,'detections_conf_List':detections_conf_List}
+        response_json = JSONRenderer().render(detection)
+        return HttpResponse(response_json, content_type='application/json', status = status.HTTP_200_OK)
+
+@permission_classes((AllowAny, ))
 class GetXRayGradCam(generics.RetrieveAPIView):
     def post(self, request):
+        name = self.request.data.get('name',None)
+        age = self.request.data.get('age',None)
+        bloodGroup = self.request.data.get('bloodGroup',None)
+        weight = self.request.data.get('weight',None)
+        token = self.request.data.get('token',None)
+        doctorID = self.request.data.get('doctorID',None)
+        gender = self.request.data.get('gender',None)
         image = request.FILES['gradcam']
+        
         ImageName = image.name 
 
         obj = FileSystemStorage()       ## Created Object of FileSystemStorage 
         ImagePath = obj.save(ImageName, image)    ## saving the file in the server
-        result = image_xray_or_not(img_path = "./media/"+ImagePath)
-        if result == False:
+        obj.save("xray_img/" + ImageName, image)
+        rslt = image_xray_or_not(img_path = "./media/"+ImagePath)
+
+        if rslt == False:
             os.remove("./media/"+ImagePath)
             response = {"imageValid":"False"}
             response_json = JSONRenderer().render(response)
-            return HttpResponse(response_json, content_type='application/json')
+            return HttpResponse(response_json, content_type='application/json', status = status.HTTP_400_BAD_REQUEST)
 
         temp = 'xray_img/' + ImageName
         temp1 = 'xray_img/' + ImagePath
@@ -98,50 +151,11 @@ class GetXRayGradCam(generics.RetrieveAPIView):
         path = obj.url(ImagePath)
         testimage ='.'+path
 
-        # covidNormal = load_model('model/CovidNormal.h5')
-        # PenumoniaNormal = load_model('model/PneumoniaNormal.h5')
-        # CovidPneumonia = load_model('model/CovidPneumonia.h5')
-        # multiClassModel = load_model('model/customTLWeights_NEW.h5')
+        lung_segment_path = lung_segment(ImagePath)
 
-        # covidNormal = load_model('model/CovidNormal.h5')
-        # PenumoniaNormal = load_model('model/PneumoniaNormal.h5')
+        resultImg, res_path, multiClassModel, res_path1 = xray_gradcam(temp2, ImageName)
 
-        nb_classes = 5   # number of classes
-        img_width, img_height = 256, 256  # change based on the shape/structure of your images
-        img_size = 256
-        learn_rate = 0.0001  # sgd learning rate
-        seresnet152, _ = Classifiers.get('seresnet152')
-        base = seresnet152(input_shape=(img_size, img_size, 3), include_top=False, weights='imagenet')
-        x = base.output
-        x = layers.GlobalAveragePooling2D()(layers.Dropout(0.16)(x))
-        x = layers.Dropout(0.3)(x)
-        preds = layers.Dense(nb_classes, 'sigmoid')(x)
-        multiClassModel=Model(inputs=base.input,outputs=preds)
-        loss= tf.keras.losses.BinaryCrossentropy(label_smoothing=0.0)
-        multiClassModel.compile(optimizers.Adam(lr=learn_rate),loss=loss,metrics=[tf.keras.metrics.AUC(multi_label=True)])
-
-        multiClassModel.load_weights('model/customTLWeights_NEW_WITH_TB.h5')
-        
-        resultImg = gradCam(temp2, multiClassModel) 
-        res_path = "media/XRay_GradCam/"
-        res_path1 = "/media/XRay_GradCam/" + ImageName
-        res_path += ImageName
-        print(res_path)
-        resultImg.save(res_path)                # result Image Path
-        res_path = "/" + res_path 
-        
-        # CovidPneumonia = load_model('model/CovidPneumonia.h5')
-
-        # image = cv2.imread(testimage) # read file 
-        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # arrange format as per keras
-        # image = cv2.resize(image,(224,224))
-        # image = np.array(image) / 255
-        # image = np.expand_dims(image, axis=0)
-
-        x = load_img(testimage, target_size=(256,256))
-        x = img_to_array(x)
-        x = np.expand_dims(x, axis=0)
-        a = multiClassModel.predict(x)
+        a = predict_xray_for_5_diseases(testimage, multiClassModel)
         a = a*100  ## Lets equalite all predictions on one stage which can be readable.
 
 
@@ -194,41 +208,26 @@ class GetXRayGradCam(generics.RetrieveAPIView):
             result = "Confused"
             colour = "success"
 
-        os.remove(testimage)
         path = '/media/' + temp
         print("---------------------------\n Hence: " + str(result))
 
-        mail = list(DoctorDetails.objects.filter(DoctorID=doctorID).values('Email'))[0].get('Email')
-        add_data = X_Ray_Image.objects.create()
-        d = Doctor_Profile.objects.get(Email = mail)
-        add_data.obj_id = millis
-        add_data.Doctor_Name = d.Doctor_Name
-        add_data.Hospital_Name = d.Hospital_Name
-        add_data.Hospital_Address = d.Hospital_Address
-        d.total_image_count += 1
-        d.xray_image_count += 1
-        add_data.Email = mail
-        add_data.Image = request.FILES['gradcam']
-        add_data.result_image = "/"+res_path1.split('/',2)[2]
-        add_data.Patient_age = age
-        add_data.Patient_weight = weight
-        add_data.Patient_Name = name
-        add_data.Patient_gender = gender
-        add_data.abnormalities = result
-        add_data.Patient_BloodGroup = bloodGroup
-        add_data.confidence = str(confidence/100)
+        processedImage_paths = [
+            {
+                "name": "Lung Segmentation",
+                "image_path": lung_segment_path
+            },
+            {
+                "name": "Predicated Image",
+                "image_path": "/media/"+res_path1.split('/',2)[2]
+            }
+            ]       
 
-        add_data.save()
-        d.save()
-
-
-        with open("."+res_path, "rb") as image2string:
-            converted_string = base64.b64encode(image2string.read())
-
-        response = {"imageValid":"True","time":time_now,"doctorName":d.Doctor_Name,"hospitalName":d.Hospital_Name,'path':res_path,'detected_path':converted_string,'detections_label':result, 'detections_conf_List':[confidence]}
+        os.remove(testimage)
+        response = {"patiend_id":"millis","processedImage_paths":processedImage_paths,"imageValid":"True","time":"time_now",'path':res_path,'detections_label':result, 'detections_conf_List':[confidence]}
         response_json = JSONRenderer().render(response)
-        return HttpResponse(response_json, content_type='application/json')
+        return HttpResponse(response_json, content_type='application/json', status = status.HTTP_200_OK)
 
+@permission_classes((AllowAny, ))
 class GetCTSCAN(generics.RetrieveAPIView):
     def post(self, request):
         name = self.request.data.get('name',None)
@@ -239,127 +238,58 @@ class GetCTSCAN(generics.RetrieveAPIView):
         token = self.request.data.get('token',None)
         doctorID = self.request.data.get('doctorID',None)
         image = request.FILES['ctscan']
-        doctorDetails = list(DoctorAuth.objects.filter(DoctorID=doctorID).values('token'))[0].get('token')
-
-        tz = pytz.timezone('Asia/Kolkata')                     # Specify the timezone
-        time_now = datetime.now(timezone.utc).astimezone(tz)   # Get current UTC time and 
-                                                            # convert it into specified time zone 
-        millis = int(time.mktime(time_now.timetuple()))        # convert the time into millisecond
-
-
-        if token is None:
-            response_json = {}
-            response_json['tokenValid'] = 'Failed'
-            response_json['message'] = 'Authentication Failed, Please Login Again'
-            response_json['isRegistered'] = "False"
-            response_json = JSONRenderer().render(response_json)
-            return HttpResponse(response_json, content_type='application/json')
         
-        elif token != doctorDetails:
-            response_json = {}
-            response_json['tokenValid'] = 'Failed'
-            response_json['message'] = 'Authentication Failed, Please Login Again'
-            response_json['isRegistered'] = "True"
-            response_json = JSONRenderer().render(response_json)
-            return HttpResponse(response_json, content_type='application/json')
+        ImageName = image.name 
+        obj = FileSystemStorage()       ## Created Object of FileSystemStorage 
+        ImagePath = obj.save(ImageName, image)    ## saving the file in the server
+        obj.save("ctscan_img/" + ImageName, image)
 
-        else:
-            ImageName = image.name 
-            obj = FileSystemStorage()       ## Created Object of FileSystemStorage 
-            ImagePath = obj.save(ImageName, image)    ## saving the file in the server
+        rslt = image_ct_or_not(img_path = "./media/"+ImagePath)
 
-            classifier = keras.models.load_model("./model/ctscan_not.h5")
-            img_pred = keras.preprocessing.image.load_img("./media/"+ImagePath, target_size = (64, 64))
-            img_pred = keras.preprocessing.image.img_to_array(img_pred)
-            img_pred = np.expand_dims(img_pred, axis = 0)
-            rslt = classifier.predict(img_pred)
-
-            if rslt[0][0] == 1:
-                os.remove("./media/"+ImagePath)
-                response = {"imageValid":"False"}
-                response_json = JSONRenderer().render(response)
-                return HttpResponse(response_json, content_type='application/json')
-
-            temp = 'ctscan_img/' + ImageName
-            temp1 = 'ctscan_img/' + ImagePath
-            temp2 = 'media/' + ImageName
-            path = obj.url(ImagePath)
-            testimage ='.'+path
-
-            CTcovidNormal = load_model('model/ctscan_VGG16.h5')
-
-            image = cv2.imread(testimage) # read file 
-            print("gradCam")
-            
-            resultImg = CTgradCam(temp2, CTcovidNormal)
-            res_path = "media/CTScan_GradCam/"
-            res_path += ImageName
-            print(res_path)
-            resultImg.save(res_path)
-            res_path = "/" + res_path
-
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # arrange format as per keras
-            image = cv2.resize(image,(224,224))
-            image = np.array(image) / 255
-            image = np.expand_dims(image, axis=0)
-    
-            CTcovidNormal = CTcovidNormal.predict(image)
-            print(CTcovidNormal)
-            probabilityCTcovidNormal = CTcovidNormal[0]
-
-            message = ""
-            message2 = ""
-            result = ""
-            colour = ""
-            symptoms = ""
-            
-            if probabilityCTcovidNormal[0] > 0.5:
-                CTcovidNormalPercentage = (probabilityCTcovidNormal[0]*100) 
-                CTcovidNormalPrediction = "COVID"
-                result = "COVID with " + str(int(CTcovidNormalPercentage)) + "% Confidence"
-                message = "AI Diagnosis found symptoms of"
-                message2 = " in chest CT-Scan."
-                colour = "danger"
-            else:
-                CTcovidNormalPercentage = (1-probabilityCTcovidNormal[0]*100) 
-                CTcovidNormalPrediction = "NON COVID"
-                result = "COVID "
-                message = "No symptoms of"
-                message2 = "found in chest CT-Scan"
-                colour = "warning"
-
-            confidence_pred_int = int(CTcovidNormalPercentage*100)
-            if confidence_pred_int > 100:
-                confidence_pred_int = confidence_pred_int/100
-            
-
-            mail = list(DoctorDetails.objects.filter(DoctorID=doctorID).values('Email'))[0].get('Email')
-            add_data = CT_Scan_Image.objects.create()
-            d = Doctor_Profile.objects.get(Email = mail)
-            confidence_pred = [str(confidence_pred_int)]
-            add_data.obj_id = millis
-            add_data.Doctor_Name = d.Doctor_Name
-            add_data.Hospital_Name = d.Hospital_Name
-            add_data.Hospital_Address = d.Hospital_Address
-            d.total_image_count += 1
-            d.ctscan_image_count += 1
-            add_data.Email = mail
-            add_data.Patient_age = age
-            add_data.Patient_weight = weight
-            add_data.Patient_Name = name
-            add_data.Patient_gender = gender
-            add_data.Image = request.FILES['ctscan']
-            add_data.result_image = "/"+res_path.split('/',2)[2]
-            add_data.COVID_Prediction = CTcovidNormalPrediction
-            add_data.Patient_BloodGroup = bloodGroup
-            add_data.confidence = confidence_pred[0]
-            add_data.save()
-            d.save()
-
-
-            with open("."+res_path, "rb") as image2string:
-                converted_string = base64.b64encode(image2string.read())
-
-            response = {"imageValid":"True","time":time_now,"doctorName":d.Doctor_Name,"hospitalName":d.Hospital_Name,'path':res_path,'detected_path':converted_string,'detections_label':CTcovidNormalPrediction, 'detections_conf_List':[confidence_pred_int]}
+        if rslt == False:
+            os.remove("./media/"+ImagePath)
+            response = {"imageValid":"False"}
             response_json = JSONRenderer().render(response)
-            return HttpResponse(response_json, content_type='application/json')
+            return HttpResponse(response_json, content_type='application/json', status = status.HTTP_400_BAD_REQUEST)
+
+        temp = 'ctscan_img/' + ImageName
+        temp1 = 'ctscan_img/' + ImagePath
+        temp2 = 'media/' + ImageName
+        path = obj.url(ImagePath)
+        testimage ='.'+path
+
+        res_path, probabilityCTcovidNormal = predict_ct_scan(testimage, temp2, ImageName)
+
+        message = ""
+        message2 = ""
+        result = ""
+        colour = ""
+        symptoms = ""
+        
+        if probabilityCTcovidNormal[0] > 0.5:
+            CTcovidNormalPercentage = (probabilityCTcovidNormal[0]*100) 
+            CTcovidNormalPrediction = "COVID"
+            result = "COVID with " + str(int(CTcovidNormalPercentage)) + "% Confidence"
+            message = "AI Diagnosis found symptoms of"
+            message2 = " in chest CT-Scan."
+            colour = "danger"
+        else:
+            CTcovidNormalPercentage = (1-probabilityCTcovidNormal[0]*100) 
+            CTcovidNormalPrediction = "NON COVID"
+            result = "COVID "
+            message = "No symptoms of"
+            message2 = "found in chest CT-Scan"
+            colour = "warning"
+
+        confidence_pred_int = int(CTcovidNormalPercentage*100)
+        if confidence_pred_int > 100:
+            confidence_pred_int = confidence_pred_int/100
+
+
+        os.remove("./media/"+ImagePath)
+        # with open("."+res_path, "rb") as image2string:
+            # converted_string = base64.b64encode(image2string.read())
+
+        response = {"imageValid":"True","time":"time_now",'path':res_path,'detected_path':"/media/"+res_path.split('/',2)[2],'detections_label':CTcovidNormalPrediction, 'detections_conf_List':[confidence_pred_int]}
+        response_json = JSONRenderer().render(response)
+        return HttpResponse(response_json, content_type='application/json', status = status.HTTP_200_OK)

@@ -18,4 +18,6 @@ def main():
 
 
 if __name__ == '__main__':
+    cwd = os.getcwd()
+    sys.path.append(os.path.dirname(os.path.abspath(__file__))+'/api/detection')
     main()

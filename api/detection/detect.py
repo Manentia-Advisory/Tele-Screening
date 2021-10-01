@@ -21,12 +21,12 @@ import uuid
 print("Importing detect Module")
 
 def detect(source, save_dir="./media/X_Ray_Detections/", user_id=123456, aws_s3_path="./media/aws_s3_bucket/", save_img=False):
-    # print(os.getcwd())
+    print(os.getcwd())
     img_size = 640
     save_txt = False
     view_img = False
     augment = True
-    weights = './demo/runs/train/exp/weights/best.pt'
+    weights = './api/runs/train/exp/weights/best.pt'
     device = ''
     conf_thres = 0.30
     iou_thres = 0.45 
