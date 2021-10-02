@@ -20,8 +20,8 @@ import uuid
 
 print("Importing detect Module")
 
-def detect(source, save_dir="./media/X_Ray_Detections/", user_id=123456, aws_s3_path="./media/aws_s3_bucket/", save_img=False):
-    print(os.getcwd())
+def detect(source, save_dir, user_id=123456, aws_s3_path="./media/aws_s3_bucket/", save_img=False):
+    # print(os.getcwd())
     img_size = 640
     save_txt = False
     view_img = False
@@ -33,9 +33,9 @@ def detect(source, save_dir="./media/X_Ray_Detections/", user_id=123456, aws_s3_
     classes = None
     agnostic_nms = True
     save_conf = True
-    temp_name = './media/'
-    source = temp_name + source
-    print(source)
+    # temp_name = './media/'
+    # source = temp_name + source
+    print("*************", source)
     
     source, weights, view_img, save_txt, imgsz = source, weights, view_img, save_txt, img_size
     # print(source.split('.')[0])
@@ -149,13 +149,14 @@ def detect(source, save_dir="./media/X_Ray_Detections/", user_id=123456, aws_s3_
             if save_img:
                 if dataset.mode == 'image':
                     image_name = str(source.split('.')[1]).split('/')[2]+"_"+str(user_id)+"_"+str(uuid.uuid4())+".png"
-                    yolo_detected_image_path = './media/X_Ray_Detections/'+image_name
+                    yolo_detected_image_path = save_path+image_name
                     yolo_detected_image_aws_path = './media/aws_s3_bucket/'+image_name
 
                     print(yolo_detected_image_path)
-                    cv2.imwrite(yolo_detected_image_path, im0) # media
+                    print("save dir + save_dir + image_name", str(save_dir) + str(image_name))
+                    cv2.imwrite(str(save_dir) + "/" + str(image_name), im0) # media
                     cv2.imwrite(yolo_detected_image_aws_path, im0) # aws
-                    new_path = yolo_detected_image_path.split('.')[1]+"."+yolo_detected_image_path.split('.')[2]
+                    new_path = str(save_dir) + "/" + str(image_name)
                 else:  # 'video'
                     if vid_path != save_path:  # new video
                         vid_path = save_path

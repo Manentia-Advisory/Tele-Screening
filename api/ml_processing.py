@@ -97,7 +97,7 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name, classifier_laye
     heatmap = np.maximum(heatmap, 0) / np.max(heatmap)
     return heatmap
 
-def gradCam(img_path, model):
+def gradCam(img_path, model, ID_millis):
     # last_conv_layer_name = "input_1"
     # classifier_layer_names = [
     #     "model",
@@ -195,13 +195,13 @@ def gradCam(img_path, model):
     superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
 
     # Save the superimposed image
-    save_path = "media/XRay_GradCam/grad_cam1.jpg"
+    save_path = "media/Image/{0}/grad_cam1.jpg".format(ID_millis)
     print("Over")
 
     superimposed_img.save(save_path)
     return superimposed_img
 
-def xray_gradcam(temp2, ImageName):
+def xray_gradcam(temp2, ImageName, ID_millis):
     nb_classes = 5   # number of classes
     img_width, img_height = 256, 256  # change based on the shape/structure of your images
     img_size = 256
@@ -216,11 +216,10 @@ def xray_gradcam(temp2, ImageName):
     loss= tf.keras.losses.BinaryCrossentropy(label_smoothing=0.0)
     multiClassModel.compile(optimizers.Adam(lr=learn_rate),loss=loss,metrics=[tf.keras.metrics.AUC(multi_label=True)])
     multiClassModel.load_weights('./model/customTLWeights_NEW_WITH_TB.h5')
-    resultImg = gradCam(temp2, multiClassModel) 
-    res_path = "media/XRay_GradCam/"
-    res_path1 = "/media/XRay_GradCam/" + ImageName
-    res_path += ImageName
-    return resultImg, res_path, multiClassModel, res_path1
+    resultImg = gradCam(temp2, multiClassModel, ID_millis) 
+    res_path = "/media/Image/{0}/".format(ID_millis) + ImageName
+    
+    return resultImg, res_path, multiClassModel
 
 def predict_xray_for_5_diseases(testimage, multiClassModel):
     x = load_img(testimage, target_size=(256,256))
@@ -237,10 +236,12 @@ def dice_coef(y_true, y_pred):
 def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
 
-def lung_segment(path):
+def lung_segment(img_path, ID_millis, django_generated_image_name):
     lung_segment_model = load_model('./model/cxr_reg_model.h5', custom_objects={'dice_coef_loss':                   
     dice_coef_loss, 'dice_coef': dice_coef})
-    img_path = "./media/"+path
+    # img_path = "./media/"+path
+    print(img_path)
+    print("^^^^^^^^^^^^")
     x_im = cv2.resize(cv2.imread(img_path),(512, 512))[:,:,0]
     # a = model.predict((im.reshape(1, 512, 512, 1)-127.0)/127.0)
     # img = np.squeeze(a)*255
@@ -248,7 +249,7 @@ def lung_segment(path):
     plt.imshow(x_im, cmap="bone")
     plt.imshow(op.reshape(512, 512), alpha=0.5, cmap="jet")
     plt.axis('off')
-    save_path = "/media/lung_segment/lung_segment"+path
+    save_path = "/media/Image/{0}/".format(ID_millis)+ "lung_segment_" + django_generated_image_name
     plt.savefig("."+save_path, bbox_inches='tight')
     return save_path
 
@@ -379,13 +380,13 @@ def CTgradCam(img_path, model):
     return superimposed_img
     print("Over")
 
-def predict_ct_scan(testimage, temp2, ImageName):
+def predict_ct_scan(testimage, ImageName, ID_millis):
     CTcovidNormal = load_model('model/ctscan_VGG16.h5')
 
     image = cv2.imread(testimage) # read file
     
-    resultImg = CTgradCam(temp2, CTcovidNormal)
-    res_path = "media/CTScan_GradCam/"
+    resultImg = CTgradCam(testimage, CTcovidNormal)
+    res_path = "media/Image/{0}/GradCam_".format(ID_millis)
     res_path += ImageName
     print(res_path)
     resultImg.save(res_path)

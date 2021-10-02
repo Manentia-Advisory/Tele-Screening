@@ -14,7 +14,7 @@ from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
 from django.template.context_processors import csrf
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect, HttpResponse
-
+from .models import *
 # Add in header
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
@@ -58,15 +58,17 @@ class GetYOLODetection(generics.RetrieveAPIView):
         doctorID = self.request.data.get('doctorID',None)
         gender = self.request.data.get('gender',None)
         image = request.FILES['xray']
-        # print(image)
-        # print(type(image))
-        ImageName = image.name
+        
+        ID_millis = int(datetime.now().timestamp() * 1000000)
+
+        OrgImageName = image.name
         obj = FileSystemStorage()       ## Created Object of FileSystemStorage 
-        ImagePath = obj.save(ImageName, image)
-        obj.save("xray_img/"+ImageName, image) 
+        ImagePath = obj.save(OrgImageName, image)
+        upload_image_path = obj.save("Image/{0}/".format(ID_millis) + OrgImageName, image) 
+        upload_image_path_media = "./media/" + upload_image_path
         # print(ImagePath)
         # print(type(ImagePath))
-        rslt = image_xray_or_not(img_path = "./media/"+ImagePath)
+        rslt = image_xray_or_not(img_path = upload_image_path_media)
 
         if rslt == False:
             os.remove("./media/"+ImagePath)
@@ -75,8 +77,8 @@ class GetYOLODetection(generics.RetrieveAPIView):
             return HttpResponse(response_json, content_type='application/json', status = status.HTTP_400_BAD_REQUEST)
         
         ## Lung Segmentation
-        lung_segment_path = lung_segment(ImagePath)
-        resultOfYOLO = detect.detect(ImagePath, save_dir="./media/X_Ray_Detections/", user_id=123456, aws_s3_path="./media/aws_s3_bucket/", save_img=False)
+        lung_segment_path = lung_segment(upload_image_path_media, ID_millis, OrgImageName)
+        resultOfYOLO = detect.detect(upload_image_path_media, save_dir="./media/Image/{0}/".format(ID_millis), user_id=123456, aws_s3_path="./media/aws_s3_bucket/", save_img=False)
 
         Detections = resultOfYOLO.get('Detections')
         detected_path = resultOfYOLO.get('new_path')      
@@ -105,6 +107,8 @@ class GetYOLODetection(generics.RetrieveAPIView):
 
         detections_conf_List = [int(float(i)*100) for i in detections_conf_List]
 
+
+        print("resultOfYOLO.get('new_path')", resultOfYOLO.get('new_path'))
         processedImage_paths = [
             {
                 "name": "Lung Segmentation",
@@ -112,9 +116,18 @@ class GetYOLODetection(generics.RetrieveAPIView):
             },
             {
                 "name": "Predicated Image",
-                "image_path": "/media/"+resultOfYOLO.get('new_path').split('/',2)[2]
+                "image_path": "/" + resultOfYOLO.get('new_path').replace("\\", "/")
             }
         ]
+
+        ImageTableObj = ImageTable.objects.create()
+        ImageTableObj.DiseaseName = detections_label
+        ImageTableObj.Percentage = str(detections_conf_List)
+        ImageTableObj.UploadedImage = "/media/"+upload_image_path
+        ImageTableObj.ProcessedColoredImage = processedImage_paths[1]["image_path"]
+        ImageTableObj.boundingBoxImage = processedImage_paths[0]["image_path"]
+        ImageTableObj.save()
+
         os.remove("./media/"+ImagePath)
         detection = {"patiend_id":"millis","processedImage_paths":processedImage_paths,"imageValid":"True","time":"time_now","tokenValid":'true', 'detections_label':detections_label,'detections_conf_List':detections_conf_List}
         response_json = JSONRenderer().render(detection)
@@ -132,30 +145,30 @@ class GetXRayGradCam(generics.RetrieveAPIView):
         gender = self.request.data.get('gender',None)
         image = request.FILES['gradcam']
         
-        ImageName = image.name 
+        OrgImageName = image.name 
+        ID_millis = int(datetime.now().timestamp() * 1000000)
 
         obj = FileSystemStorage()       ## Created Object of FileSystemStorage 
-        ImagePath = obj.save(ImageName, image)    ## saving the file in the server
-        obj.save("xray_img/" + ImageName, image)
-        rslt = image_xray_or_not(img_path = "./media/"+ImagePath)
+        # django_generated_image_name = obj.save(OrgImageName, image)    ## saving the file in the server
+        upload_image_path = obj.save("Image/{0}/".format(ID_millis) + OrgImageName, image)
+        upload_image_path = "./media/" + upload_image_path
 
+        rslt = image_xray_or_not(img_path = upload_image_path)
+        django_generated_image_name = OrgImageName
         if rslt == False:
-            os.remove("./media/"+ImagePath)
+            os.remove("./media/"+django_generated_image_name)
             response = {"imageValid":"False"}
             response_json = JSONRenderer().render(response)
             return HttpResponse(response_json, content_type='application/json', status = status.HTTP_400_BAD_REQUEST)
 
-        temp = 'xray_img/' + ImageName
-        temp1 = 'xray_img/' + ImagePath
-        temp2 = 'media/' + ImageName
-        path = obj.url(ImagePath)
-        testimage ='.'+path
+        # path = obj.url(django_generated_image_name)
+        # testimage ='.'+path
+        
+        lung_segment_path = lung_segment(upload_image_path, ID_millis, django_generated_image_name)
 
-        lung_segment_path = lung_segment(ImagePath)
+        resultImg, res_path, multiClassModel = xray_gradcam(upload_image_path, OrgImageName, ID_millis)
 
-        resultImg, res_path, multiClassModel, res_path1 = xray_gradcam(temp2, ImageName)
-
-        a = predict_xray_for_5_diseases(testimage, multiClassModel)
+        a = predict_xray_for_5_diseases(upload_image_path, multiClassModel)
         a = a*100  ## Lets equalite all predictions on one stage which can be readable.
 
 
@@ -208,7 +221,6 @@ class GetXRayGradCam(generics.RetrieveAPIView):
             result = "Confused"
             colour = "success"
 
-        path = '/media/' + temp
         print("---------------------------\n Hence: " + str(result))
 
         processedImage_paths = [
@@ -218,12 +230,20 @@ class GetXRayGradCam(generics.RetrieveAPIView):
             },
             {
                 "name": "Predicated Image",
-                "image_path": "/media/"+res_path1.split('/',2)[2]
+                "image_path": res_path
             }
             ]       
 
-        os.remove(testimage)
-        response = {"patiend_id":"millis","processedImage_paths":processedImage_paths,"imageValid":"True","time":"time_now",'path':res_path,'detections_label':result, 'detections_conf_List':[confidence]}
+        ImageTableObj = ImageTable.objects.create()
+        ImageTableObj.ID = ID_millis
+        ImageTableObj.DiseaseName = result
+        ImageTableObj.Percentage = str(confidence)
+        ImageTableObj.UploadedImage = upload_image_path
+        ImageTableObj.ProcessedColoredImage = processedImage_paths[1]["image_path"]
+        ImageTableObj.boundingBoxImage = processedImage_paths[0]["image_path"]
+        ImageTableObj.save()
+
+        response = {"patiend_id":"millis","processedImage_paths":processedImage_paths,"imageValid":"True","time":"time_now",'detections_label':result, 'detections_conf_List':[confidence]}
         response_json = JSONRenderer().render(response)
         return HttpResponse(response_json, content_type='application/json', status = status.HTTP_200_OK)
 
@@ -239,26 +259,21 @@ class GetCTSCAN(generics.RetrieveAPIView):
         doctorID = self.request.data.get('doctorID',None)
         image = request.FILES['ctscan']
         
+        ID_millis = int(datetime.now().timestamp() * 1000000)
+
         ImageName = image.name 
         obj = FileSystemStorage()       ## Created Object of FileSystemStorage 
-        ImagePath = obj.save(ImageName, image)    ## saving the file in the server
-        obj.save("ctscan_img/" + ImageName, image)
-
-        rslt = image_ct_or_not(img_path = "./media/"+ImagePath)
+        upload_image_path = obj.save("Image/{0}/".format(ID_millis) + ImageName, image)
+        upload_image_path = "./media/"+upload_image_path
+        
+        rslt = image_ct_or_not(img_path = upload_image_path)
 
         if rslt == False:
-            os.remove("./media/"+ImagePath)
             response = {"imageValid":"False"}
             response_json = JSONRenderer().render(response)
             return HttpResponse(response_json, content_type='application/json', status = status.HTTP_400_BAD_REQUEST)
 
-        temp = 'ctscan_img/' + ImageName
-        temp1 = 'ctscan_img/' + ImagePath
-        temp2 = 'media/' + ImageName
-        path = obj.url(ImagePath)
-        testimage ='.'+path
-
-        res_path, probabilityCTcovidNormal = predict_ct_scan(testimage, temp2, ImageName)
+        res_path, probabilityCTcovidNormal = predict_ct_scan(upload_image_path, ImageName, ID_millis)
 
         message = ""
         message2 = ""
@@ -285,8 +300,15 @@ class GetCTSCAN(generics.RetrieveAPIView):
         if confidence_pred_int > 100:
             confidence_pred_int = confidence_pred_int/100
 
+        ImageTableObj = ImageTable.objects.create()
+        ImageTableObj.ID = ID_millis
+        ImageTableObj.DiseaseName = CTcovidNormalPrediction
+        ImageTableObj.Percentage = str(confidence_pred_int)
+        ImageTableObj.UploadedImage = upload_image_path
+        ImageTableObj.ProcessedColoredImage = res_path
+        ImageTableObj.boundingBoxImage = res_path
+        ImageTableObj.save()
 
-        os.remove("./media/"+ImagePath)
         # with open("."+res_path, "rb") as image2string:
             # converted_string = base64.b64encode(image2string.read())
 
