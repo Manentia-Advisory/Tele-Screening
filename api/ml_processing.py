@@ -20,12 +20,37 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import IPython
 import keras
-import cv2 
+import cv2
 # from demo.HetMap import *
 
 img_size = (224, 224)
 
 preprocess_input = keras.applications.inception_v3.preprocess_input
+
+########################################
+# DANGER ZONE !! DONT TOUCH BELOW CODE #
+########################################
+
+nb_classes = 5   # number of classes
+img_width, img_height = 256, 256  # change based on the shape/structure of your images
+img_size = 256
+seresnet152, _ = Classifiers.get('seresnet152')
+base = seresnet152(input_shape=(img_size, img_size, 3), include_top=False, weights='imagenet')
+learn_rate = 0.0001  # sgd learning rate
+x = base.output  
+x = layers.GlobalAveragePooling2D()(layers.Dropout(0.16)(x))
+x = layers.Dropout(0.3)(x)
+preds = layers.Dense(nb_classes, 'sigmoid')(x)
+multiClassModel=Model(inputs=base.input,outputs=preds)
+loss= tf.keras.losses.BinaryCrossentropy(label_smoothing=0.0)
+multiClassModel.compile(optimizers.Adam(lr=learn_rate),loss=loss,metrics=[tf.keras.metrics.AUC(multi_label=True)])
+multiClassModel.load_weights('./model/customTLWeights_NEW_WITH_TB.h5')
+
+########################################
+# DANGER ZONE !! DONT TOUCH ABOVE CODE # 
+########################################
+
+
 
 # identify image is xray or not
 
@@ -196,26 +221,11 @@ def gradCam(img_path, model, ID_millis):
 
     # Save the superimposed image
     save_path = "media/Image/{0}/grad_cam1.jpg".format(ID_millis)
-    print("Over")
 
     superimposed_img.save(save_path)
     return superimposed_img
 
 def xray_gradcam(temp2, ImageName, ID_millis):
-    nb_classes = 5   # number of classes
-    img_width, img_height = 256, 256  # change based on the shape/structure of your images
-    img_size = 256
-    learn_rate = 0.0001  # sgd learning rate
-    seresnet152, _ = Classifiers.get('seresnet152')
-    base = seresnet152(input_shape=(img_size, img_size, 3), include_top=False, weights='imagenet')
-    x = base.output
-    x = layers.GlobalAveragePooling2D()(layers.Dropout(0.16)(x))
-    x = layers.Dropout(0.3)(x)
-    preds = layers.Dense(nb_classes, 'sigmoid')(x)
-    multiClassModel=Model(inputs=base.input,outputs=preds)
-    loss= tf.keras.losses.BinaryCrossentropy(label_smoothing=0.0)
-    multiClassModel.compile(optimizers.Adam(lr=learn_rate),loss=loss,metrics=[tf.keras.metrics.AUC(multi_label=True)])
-    multiClassModel.load_weights('./model/customTLWeights_NEW_WITH_TB.h5')
     resultImg = gradCam(temp2, multiClassModel, ID_millis) 
     res_path = "/media/Image/{0}/".format(ID_millis) + ImageName
     
@@ -225,7 +235,7 @@ def predict_xray_for_5_diseases(testimage, multiClassModel):
     x = load_img(testimage, target_size=(256,256))
     x = img_to_array(x)
     x = np.expand_dims(x, axis=0)
-    return multiClassModel.predict(x)
+    return multiClassModel(x)
 
 def dice_coef(y_true, y_pred):
     y_true_f = keras.flatten(y_true)
@@ -240,8 +250,6 @@ def lung_segment(img_path, ID_millis, django_generated_image_name):
     lung_segment_model = load_model('./model/cxr_reg_model.h5', custom_objects={'dice_coef_loss':                   
     dice_coef_loss, 'dice_coef': dice_coef})
     # img_path = "./media/"+path
-    print(img_path)
-    print("^^^^^^^^^^^^")
     x_im = cv2.resize(cv2.imread(img_path),(512, 512))[:,:,0]
     # a = model.predict((im.reshape(1, 512, 512, 1)-127.0)/127.0)
     # img = np.squeeze(a)*255
@@ -378,7 +386,6 @@ def CTgradCam(img_path, model):
     # plt.matshow(superimposed_img)
     # plt.show()
     return superimposed_img
-    print("Over")
 
 def predict_ct_scan(testimage, ImageName, ID_millis):
     CTcovidNormal = load_model('model/ctscan_VGG16.h5')
@@ -388,7 +395,6 @@ def predict_ct_scan(testimage, ImageName, ID_millis):
     resultImg = CTgradCam(testimage, CTcovidNormal)
     res_path = "media/Image/{0}/GradCam_".format(ID_millis)
     res_path += ImageName
-    print(res_path)
     resultImg.save(res_path)
     res_path = "/" + res_path
 
@@ -398,7 +404,6 @@ def predict_ct_scan(testimage, ImageName, ID_millis):
     image = np.expand_dims(image, axis=0)
 
     CTcovidNormal = CTcovidNormal.predict(image)
-    print(CTcovidNormal)
     probabilityCTcovidNormal = CTcovidNormal[0]
     return res_path, probabilityCTcovidNormal
 
