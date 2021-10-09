@@ -17,7 +17,7 @@ def ContactImage(instance, filename):
     return 'ContactImage/{0}.jpeg'.format(instance.ID)
 
 class ImageTable(models.Model):
-    ID = models.IntegerField(default = int(datetime.now().timestamp() * 1000000), primary_key=True)
+    Patient_ID = models.IntegerField(default = int(datetime.now().timestamp() * 1000000))
     CreatedAt = models.DateTimeField(auto_now=True)
     DiseaseName = models.CharField(max_length = 512)
     Percentage = models.CharField(max_length = 128)

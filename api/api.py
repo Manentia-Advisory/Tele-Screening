@@ -121,6 +121,7 @@ class GetYOLODetection(generics.RetrieveAPIView):
         ]
 
         ImageTableObj = ImageTable.objects.create()
+        ImageTableObj.Patient_ID = ID_millis
         ImageTableObj.DiseaseName = detections_label
         ImageTableObj.Percentage = str(detections_conf_List)
         ImageTableObj.UploadedImage = "/media/"+upload_image_path
@@ -235,7 +236,7 @@ class GetXRayGradCam(generics.RetrieveAPIView):
             ]       
 
         ImageTableObj = ImageTable.objects.create()
-        ImageTableObj.ID = ID_millis
+        ImageTableObjPatient_ID = ID_millis
         ImageTableObj.DiseaseName = result
         ImageTableObj.Percentage = str(confidence)
         ImageTableObj.UploadedImage = upload_image_path
@@ -301,7 +302,7 @@ class GetCTSCAN(generics.RetrieveAPIView):
             confidence_pred_int = confidence_pred_int/100
 
         ImageTableObj = ImageTable.objects.create()
-        ImageTableObj.ID = ID_millis
+        ImageTableObjPatient_ID = ID_millis
         ImageTableObj.DiseaseName = CTcovidNormalPrediction
         ImageTableObj.Percentage = str(confidence_pred_int)
         ImageTableObj.UploadedImage = upload_image_path
