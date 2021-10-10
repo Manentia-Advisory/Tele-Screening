@@ -3,6 +3,10 @@ import List from './list.component';
 import DISEASE_LIST from '../assets/diseaseList'
 import Remark from './remark.component';
 
+import UploadedImage from '../assets/uploaded-Image.jpeg'
+import ColorSegmentationImage from '../assets/color-segmentation-image.png'
+import BoxSegmentationImage from '../assets/box-segmentation-image.png'
+
 class Result extends React.Component {
 
     constructor(props) {
@@ -22,6 +26,10 @@ class Result extends React.Component {
             this.setState({remarks: e.target.value})
         }
 
+        const handleClick = e => {
+            alert("This feature is under development!")
+        }
+
         return (
             <div className="flex-grow w-full max-w-7xl mx-auto xl:pl-8 lg:flex">
             <div className="flex-1 min-w-0 bg-white lg:flex">
@@ -35,7 +43,7 @@ class Result extends React.Component {
                                 <div className="my-4">
                                     <h2 className="text-lg ml-1 font-medium text-gray-900 mb-1"><span
                                             className="text-gray-500">ID: </span>12399203534</h2>
-                                    <img className="mx-auto rounded-md" src='https://dummyimage.com/300x350.png?text=UploadedImage' alt='' />
+                                    <img className="mx-auto rounded-md h-80" src={ UploadedImage } alt='' />
                                 </div>
                                 <div className="lg:w-auto lg:m-0 my-auto mx-auto sm:ml-10 w-11/12">
                                     <h3 className="font-medium text-gray-900">Patient Information</h3>
@@ -63,7 +71,7 @@ class Result extends React.Component {
                                 </div>
                             </div>
                             <div className="mt-4 mx-4 md:mx-0 md:mt-0 hidden lg:flex lg:flex-col justify-between">
-                            <button type="button"
+                            <button type="button" onClick={handleClick}
                                 className="w-9/12 mr-1 lg:mr-0 lg:w-full mt-2  py-2 px-4 border border-blue-700 rounded-md shadow-sm text-sm font-medium text-blue-800 hover:text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                     Edit Marking
                             </button>
@@ -89,14 +97,14 @@ class Result extends React.Component {
                                 </div>
                                 <div className="my-10 mx-5 flex flex-col sm:flex-row justify-between">
                                     <div className="border border-gray-200 rounded-md mx-auto">
-                                        <img className="rounded-t-md"
-                                            src='https://dummyimage.com/350x400.png?text=Segmentation' alt='' />
+                                        <img className="rounded-t-md h-80"
+                                            src={ ColorSegmentationImage } alt='' />
                                         <h2 className="text-md text-center my-2 mx-auto font-medium text-gray-900">Lung
                                             Segmentation Image</h2>
                                     </div>
                                     <div className="border border-gray-200 rounded-md mx-auto mt-6 sm:mt-0">
-                                        <img className="rounded-t-md"
-                                            src='https://dummyimage.com/350x400.png?text=ColorImage' alt='' />
+                                        <img className="rounded-t-md h-80"
+                                            src={ BoxSegmentationImage } alt='' />
                                         <h2 className="text-md text-center my-2 mx-auto font-medium text-gray-900">
                                             Color/Server Image</h2>
                                     </div>
@@ -106,7 +114,7 @@ class Result extends React.Component {
                                 <Remark value={this.state.remarks} handleChange={handleChangeRemarks}/>
 
                                 <div className="mx-12 mb-8 lg:hidden flex lg:flex-col justify-between">
-                                    <button type="button"
+                                    <button type="button" onClick={handleClick}
                                         className="w-9/12 mr-1.5 lg:mr-0 lg:w-full mt-2  py-2 px-4 border border-blue-700 rounded-md shadow-sm text-sm font-medium text-blue-800 hover:text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                             Edit Marking
                                     </button>
